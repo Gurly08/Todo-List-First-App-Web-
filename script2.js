@@ -1,5 +1,7 @@
 const todos = [];
 const RENDER_EVENT = 'render-todo';
+const SAVED_EVENT = 'saved-todo';
+const STORAGE_KEY = 'TODO_APPS';
 
 function generateId() {
     return +new Date();
@@ -38,6 +40,10 @@ document.addEventListener(RENDER_EVENT, function () {
     });
   });
 
+  document.addEventListener(SAVED_EVENT, function () {
+    console.log(localStorage.getItem(STORAGE_KEY));
+  });
+
   function addTodo() {
     const textTodo = document.getElementById('title').value;
     const timestamp = document.getElementById('date').value;
@@ -47,14 +53,33 @@ document.addEventListener(RENDER_EVENT, function () {
     todos.push(todoObject);
    
     document.dispatchEvent(new Event(RENDER_EVENT));
+    saveData();
+  }
+
+  function isStorageExist() /* boolean */ {
+    if (typeof (Storage) === undefined) {
+      alert('Browser kamu tidak mendukung local storage');
+      return false;
+    }
+    return true;
+  }
+
+  function saveData() {
+    if (isStorageExist()) {
+      const parsed = JSON.stringify(todos);
+      localStorage.setItem(STORAGE_KEY, parsed);
+      document.dispatchEvent(new Event(SAVED_EVENT));
+    }
   }
 
 function makeTodo(todoObject) {
+    const {id, task, timestamp, isCompleted} = todoObject;//memanggil inputan user
+    
     const textTitle = document.createElement('h2');
-    textTitle.innerText = todoObject.task;
+    textTitle.innerText = task;
    
     const textTimestamp = document.createElement('p');
-    textTimestamp.innerText = todoObject.timestamp;
+    textTimestamp.innerText = timestamp;
    
     const textContainer = document.createElement('div');
     textContainer.classList.add('inner');
@@ -65,19 +90,19 @@ function makeTodo(todoObject) {
     container.append(textContainer);
     container.setAttribute('id', `todo-${todoObject.id}`);
 
-    if (todoObject.isCompleted) {
+    if (isCompleted) {
         const undoButton = document.createElement('button');
         undoButton.classList.add('undo-button');
      
         undoButton.addEventListener('click', function () {
-          undoTaskFromCompleted(todoObject.id);
+          undoTaskFromCompleted(id);
         });
      
         const trashButton = document.createElement('button');
         trashButton.classList.add('trash-button');
      
         trashButton.addEventListener('click', function () {
-          removeTaskFromCompleted(todoObject.id);
+          removeTaskFromCompleted(id);
         });
      
         container.append(undoButton, trashButton);
@@ -102,6 +127,7 @@ function addTaskToCompleted (todoId) {
    
     todoTarget.isCompleted = true;
     document.dispatchEvent(new Event(RENDER_EVENT));
+    saveData();
 }
 
 function findTodo(todoId) {
@@ -129,6 +155,7 @@ function removeTaskFromCompleted(todoId) {
    
     todos.splice(todoTarget, 1);
     document.dispatchEvent(new Event(RENDER_EVENT));
+    saveData();
 }
    
    
@@ -139,5 +166,5 @@ function undoTaskFromCompleted(todoId) {
    
     todoTarget.isCompleted = false;
     document.dispatchEvent(new Event(RENDER_EVENT));
+    saveData();
 }
-  
